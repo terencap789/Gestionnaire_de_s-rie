@@ -26,5 +26,5 @@ Toutes les données sont chiffrées avec AES et protégées par une clé génér
 ### 1. Cloner ou créer un dépôt
 
 ```bash
-git clone https://github.com/votre-utilisateur/gestionnaire-episodes.git
+git clone https://github.com/terencap789/gestionnaire-episodes.git
 cd gestionnaire-episodes
