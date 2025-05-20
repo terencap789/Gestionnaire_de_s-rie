@@ -1,0 +1,81 @@
+/* style.css */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f6fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+    margin: 0;
+}
+
+h1 {
+    color: #2f3640;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 800px;
+}
+
+input, select, button, textarea {
+    font-size: 16px;
+    padding: 10px;
+    margin: 10px 0;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #dcdde1;
+    border-radius: 8px;
+}
+
+button {
+    background-color: #273c75;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #40739e;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+}
+
+.episode-list {
+    margin-top: 20px;
+    background-color: #f0f0f0;
+    padding: 15px;
+    border-radius: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+hr {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px solid #ccc;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 15px 20px;
+    }
+}
