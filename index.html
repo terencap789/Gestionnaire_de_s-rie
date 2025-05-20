@@ -1,181 +1,198 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Gestionnaire d'Épisodes</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
-    h1, h2 {
-      color: #333;
-    }
-    input, select, button, textarea {
-      display: block;
-      margin: 10px 0;
-      padding: 8px;
-      width: 100%;
-      max-width: 400px;
-    }
-    .section {
-      background: white;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #ccc;
-    }
-    pre {
-      background: #eee;
-      padding: 10px;
-      white-space: pre-wrap;
-      max-width: 600px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Gestionnaire d'Épisodes</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Gestionnaire d'Épisodes de Séries</h1>
+    <h1>Gestionnaire d'Épisodes</h1>
+    <div class="container">
+        <label for="serieName">Nom de la série :</label>
+        <input type="text" id="serieName" placeholder="ex: Breaking Bad">
 
-  <div class="section">
-    <h2>Créer une série</h2>
-    <input id="newSerieName" placeholder="Nom de la série">
-    <button onclick="createSerie()">Créer</button>
-  </div>
+        <button onclick="createSerie()">Créer la série</button>
 
-  <div class="section">
-    <h2>Sélectionner une série</h2>
-    <select id="serieSelect" onchange="loadSerie()"></select>
-  </div>
+        <hr>
 
-  <div class="section">
-    <h2>Ajouter un épisode</h2>
-    <input id="saison" placeholder="Saison">
-    <input id="episode" placeholder="Épisode">
-    <input id="date" placeholder="Date de visionnage (jj/mm/aaaa)">
-    <input id="note" placeholder="Note / commentaire">
-    <button onclick="ajouterEpisode()">Ajouter</button>
-  </div>
+        <label for="serieSelect">Sélectionner une série :</label>
+        <select id="serieSelect">
+            <option value="">-- Choisir --</option>
+        </select>
 
-  <div class="section">
-    <h2>Rechercher par saison</h2>
-    <input id="saisonRecherche" placeholder="Saison à rechercher">
-    <button onclick="rechercher()">Rechercher</button>
-    <pre id="resultatRecherche"></pre>
-  </div>
+        <label for="seasonNumber">Saison :</label>
+        <input type="number" id="seasonNumber" min="1">
 
-  <div class="section">
-    <h2>Supprimer</h2>
-    <button onclick="supprimerEpisode()">Supprimer dernier épisode</button>
-    <button onclick="supprimerSerie()">Supprimer la série</button>
-  </div>
+        <label for="episodeNumber">Épisode :</label>
+        <input type="number" id="episodeNumber" min="1">
 
-  <div class="section">
-    <h2>Import / Export</h2>
-    <button onclick="exporter()">Exporter</button>
-    <input type="file" onchange="importer(event)">
-    <pre id="jsonOutput"></pre>
-  </div>
+        <label for="watchDate">Date de visionnage :</label>
+        <input type="date" id="watchDate">
 
-  <script>
-    let series = JSON.parse(localStorage.getItem("series") || "{}");
+        <label for="note">Note ou commentaire :</label>
+        <textarea id="note" placeholder="Note (optionnel)"></textarea>
 
-    function save() {
-      localStorage.setItem("series", JSON.stringify(series));
-      updateSerieList();
-    }
+        <button onclick="addEpisode()">Ajouter un épisode</button>
+        <button onclick="viewEpisodes()">Afficher tous les épisodes</button>
+        <button onclick="deleteEpisode()">Supprimer un épisode</button>
+        <button onclick="deleteSerie()">Supprimer la série</button>
+        <button onclick="searchSeason()">Rechercher par saison</button>
 
-    function updateSerieList() {
-      const select = document.getElementById("serieSelect");
-      select.innerHTML = "";
-      for (const nom in series) {
-        const option = document.createElement("option");
-        option.value = nom;
-        option.textContent = nom;
-        select.appendChild(option);
-      }
-    }
+        <hr>
 
-    function createSerie() {
-      const nom = document.getElementById("newSerieName").value.trim();
-      if (!nom || series[nom]) return;
-      series[nom] = [];
-      document.getElementById("newSerieName").value = "";
-      save();
-    }
+        <button onclick="exportData()">Exporter (JSON chiffré)</button>
+        <input type="file" onchange="importData(event)">
 
-    function loadSerie() {
-      document.getElementById("resultatRecherche").textContent = "";
-    }
+        <div class="episode-list" id="episodeList"></div>
+    </div>
 
-    function ajouterEpisode() {
-      const nom = document.getElementById("serieSelect").value;
-      if (!nom) return;
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        let series = {};
+        let secretKey = generateKey();
 
-      const episode = {
-        saison: document.getElementById("saison").value,
-        episode: document.getElementById("episode").value,
-        date: document.getElementById("date").value,
-        note: document.getElementById("note").value
-      };
-
-      if (episode.saison && episode.episode) {
-        series[nom].push(episode);
-        save();
-        ["saison", "episode", "date", "note"].forEach(id => document.getElementById(id).value = "");
-      }
-    }
-
-    function rechercher() {
-      const nom = document.getElementById("serieSelect").value;
-      const saison = document.getElementById("saisonRecherche").value;
-      if (!nom || !saison) return;
-
-      const episodes = series[nom].filter(e => e.saison === saison);
-      const output = episodes.map(e => `S${e.saison}E${e.episode} - ${e.date} : ${e.note || "Aucune note"}`).join("\n");
-      document.getElementById("resultatRecherche").textContent = output || "Aucun épisode trouvé.";
-    }
-
-    function supprimerEpisode() {
-      const nom = document.getElementById("serieSelect").value;
-      if (!nom || !series[nom].length) return;
-      series[nom].pop();
-      save();
-    }
-
-    function supprimerSerie() {
-      const nom = document.getElementById("serieSelect").value;
-      if (!nom) return;
-      delete series[nom];
-      save();
-    }
-
-    function exporter() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(series));
-      const link = document.createElement("a");
-      link.href = dataStr;
-      link.download = "series.json";
-      link.click();
-      document.getElementById("jsonOutput").textContent = "Exporté avec succès.";
-    }
-
-    function importer(event) {
-      const reader = new FileReader();
-      reader.onload = function () {
-        try {
-          const data = JSON.parse(reader.result);
-          Object.assign(series, data);
-          save();
-          document.getElementById("jsonOutput").textContent = "Importation réussie.";
-        } catch {
-          document.getElementById("jsonOutput").textContent = "Erreur lors de l'importation.";
+        function generateKey() {
+            return CryptoJS.lib.WordArray.random(16).toString();
         }
-      };
-      reader.readAsText(event.target.files[0]);
-    }
 
-    // Initialisation
-    updateSerieList();
-  </script>
+        function clearFields() {
+            document.getElementById("seasonNumber").value = "";
+            document.getElementById("episodeNumber").value = "";
+            document.getElementById("watchDate").value = "";
+            document.getElementById("note").value = "";
+        }
+
+        function createSerie() {
+            const name = document.getElementById("serieName").value.trim();
+            if (name && !series[name]) {
+                series[name] = [];
+                const option = new Option(name, name);
+                document.getElementById("serieSelect").add(option);
+                alert(`Série "${name}" créée.`);
+            }
+            document.getElementById("serieName").value = "";
+        }
+
+        function addEpisode() {
+            const serie = document.getElementById("serieSelect").value;
+            const saison = document.getElementById("seasonNumber").value;
+            const episode = document.getElementById("episodeNumber").value;
+            const date = document.getElementById("watchDate").value;
+            const note = document.getElementById("note").value;
+
+            if (serie && saison && episode && date) {
+                series[serie].push({ saison, episode, date, note });
+                alert("Épisode ajouté.");
+                clearFields();
+            } else {
+                alert("Remplis tous les champs obligatoires.");
+            }
+        }
+
+        function viewEpisodes() {
+            const serie = document.getElementById("serieSelect").value;
+            const list = document.getElementById("episodeList");
+            list.innerHTML = "";
+
+            if (serie && series[serie].length) {
+                series[serie].forEach(ep => {
+                    list.innerHTML += `Saison ${ep.saison}, Épisode ${ep.episode}<br>Date: ${ep.date}<br>Note: ${ep.note || "Aucune"}<hr>`;
+                });
+            } else {
+                list.innerHTML = "Aucun épisode enregistré.";
+            }
+            clearFields();
+        }
+
+        function deleteEpisode() {
+            const serie = document.getElementById("serieSelect").value;
+            const saison = document.getElementById("seasonNumber").value;
+            const episode = document.getElementById("episodeNumber").value;
+
+            if (serie && saison && episode) {
+                series[serie] = series[serie].filter(ep => !(ep.saison == saison && ep.episode == episode));
+                alert("Épisode supprimé.");
+                clearFields();
+            } else {
+                alert("Saisis la saison et l'épisode à supprimer.");
+            }
+        }
+
+        function deleteSerie() {
+            const select = document.getElementById("serieSelect");
+            const serie = select.value;
+            if (serie && confirm("Confirmer la suppression de la série ?")) {
+                delete series[serie];
+                select.remove(select.selectedIndex);
+                alert("Série supprimée.");
+                document.getElementById("episodeList").innerHTML = "";
+            }
+            clearFields();
+        }
+
+        function searchSeason() {
+            const serie = document.getElementById("serieSelect").value;
+            const saison = document.getElementById("seasonNumber").value;
+            const list = document.getElementById("episodeList");
+            list.innerHTML = "";
+
+            if (serie && saison) {
+                const results = series[serie].filter(ep => ep.saison == saison);
+                if (results.length) {
+                    results.forEach(ep => {
+                        list.innerHTML += `Saison ${ep.saison}, Épisode ${ep.episode}<br>Date: ${ep.date}<br>Note: ${ep.note || "Aucune"}<hr>`;
+                    });
+                } else {
+                    list.innerHTML = "Aucun épisode trouvé pour cette saison.";
+                }
+            }
+            clearFields();
+        }
+
+        function exportData() {
+            const data = JSON.stringify({ series, key: secretKey });
+            const encrypted = CryptoJS.AES.encrypt(data, secretKey).toString();
+            const blob = new Blob([encrypted], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "episodes_chiffres.json";
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const encrypted = e.target.result;
+                    const decrypted = CryptoJS.AES.decrypt(encrypted, secretKey).toString(CryptoJS.enc.Utf8);
+                    const parsed = JSON.parse(decrypted);
+                    if (parsed.series && parsed.key) {
+                        series = parsed.series;
+                        secretKey = parsed.key;
+
+                        const select = document.getElementById("serieSelect");
+                        select.innerHTML = '<option value="">-- Choisir --</option>';
+                        Object.keys(series).forEach(name => {
+                            const option = new Option(name, name);
+                            select.add(option);
+                        });
+
+                        alert("Importation réussie.");
+                        viewEpisodes();
+                    } else {
+                        throw new Error("Structure JSON invalide.");
+                    }
+                } catch (err) {
+                    alert("Erreur lors du déchiffrement ou du parsing : " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
 </body>
 </html>
